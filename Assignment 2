@@ -1,0 +1,46 @@
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+# Function to calculate the required Midterm and Final grades
+def calculate_required_grades(prelim):
+    try:
+        prelim = float(prelim)
+        if prelim < 0 or prelim > 100:
+            return None, "Prelim grade should be between 0 and 100."
+
+        # Overall grade formula: 0.20 * Prelim + 0.30 * Midterm + 0.50 * Final >= 75
+        required_sum = 75 - (0.20 * prelim)
+
+        # If prelim is too low to pass
+        if required_sum > 80:  # This means even if midterm = 30 and final = 50, the total is < 75
+            return None, f"With a Prelim grade of {prelim}, it is impossible to pass."
+
+        # Calculate possible Midterm and Final grade combinations
+        required_midterm_final = required_sum / (0.30 + 0.50)
+        return required_midterm_final, None
+
+    except ValueError:
+        return None, "Invalid input. Please enter a numerical value for the Prelim grade."
+
+
+# Route for the home page
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+
+# Route to process the form submission
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    prelim_grade = request.form['prelim']
+    required_grades, error = calculate_required_grades(prelim_grade)
+
+    if error:
+        return render_template('index.html', error=error)
+
+    return render_template('index.html', prelim=prelim_grade, required_grades=required_grades)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
